@@ -224,7 +224,10 @@ object WireguardManager : KoinComponent {
             }
 
             persistentState.wireguardPlainFileMigrationDone = true
-            Logger.i(LOG_TAG_PROXY, "migrate: wg config migration complete: migrated=$migratedCount, failed=$failedCount")
+            Logger.i(
+                LOG_TAG_PROXY,
+                "migrate: wg config migration complete: migrated=$migratedCount, failed=$failedCount"
+            )
         }
     }
 
@@ -370,6 +373,7 @@ object WireguardManager : KoinComponent {
                     map.isDeletable,
                     map.ssidEnabled,
                     map.ssids,
+                    map.allowIncomingPeers,
                     map.isSplitProxy
                 )
             mappings.add(newMap)
@@ -515,6 +519,7 @@ object WireguardManager : KoinComponent {
                 m.isDeletable,
                 m.ssidEnabled,
                 m.ssids,
+                m.allowIncomingPeers,
                 m.isSplitProxy
             )
         mappings.add(newMap)
@@ -552,12 +557,22 @@ object WireguardManager : KoinComponent {
         }
 
         // check if the config is active and if it can be used on this network
-        if (config.isActive && isEligibleForNetwork(id, usesMobileNw, ssid, config.useOnlyOnMetered, config.ssidEnabled)) {
+        if (config.isActive && isEligibleForNetwork(
+                id,
+                usesMobileNw,
+                ssid,
+                config.useOnlyOnMetered,
+                config.ssidEnabled
+            )
+        ) {
             Logger.d(LOG_TAG_PROXY, "active wg for $type => add $idStr")
             return true
         }
 
-        Logger.v(LOG_TAG_PROXY, "wg for $type not active or not eligible nw, return empty, for id: $idStr, usesMtrdNw: $usesMobileNw, ssid: $ssid")
+        Logger.v(
+            LOG_TAG_PROXY,
+            "wg for $type not active or not eligible nw, return empty, for id: $idStr, usesMtrdNw: $usesMobileNw, ssid: $ssid"
+        )
         return false
     }
 
@@ -580,7 +595,15 @@ object WireguardManager : KoinComponent {
     }
 
     // no need to check for app excluded from proxy here, expected to call this fn after that
-    suspend fun getAllPossibleConfigIdsForApp(uid: Int, ip: String, port: Int, domain: String, usesMobileNw: Boolean, ssid: String, default: String): List<String> {
+    suspend fun getAllPossibleConfigIdsForApp(
+        uid: Int,
+        ip: String,
+        port: Int,
+        domain: String,
+        usesMobileNw: Boolean,
+        ssid: String,
+        default: String
+    ): List<String> {
         val proxyIds: MutableList<String> = mutableListOf()
 
         if (oneWireGuardEnabled()) {
@@ -677,7 +700,13 @@ object WireguardManager : KoinComponent {
     }
 
 
-    private fun isEligibleForNetwork(id: Int, usesMobileNw: Boolean, ssid: String, mobileOnlySetting: Boolean, ssidEnabled: Boolean): Boolean {
+    private fun isEligibleForNetwork(
+        id: Int,
+        usesMobileNw: Boolean,
+        ssid: String,
+        mobileOnlySetting: Boolean,
+        ssidEnabled: Boolean
+    ): Boolean {
         if (!mobileOnlySetting && !ssidEnabled) return true
 
         val passMobileOnly = mobileOnlySetting && usesMobileNw
@@ -731,6 +760,7 @@ object WireguardManager : KoinComponent {
                 ssidItem.type.isExact -> {
                     ssidItem.name.equals(ssid, ignoreCase = true)
                 }
+
                 else -> { // wildcard
                     matchesWildcard(ssidItem.name, ssid)
                 }
@@ -752,6 +782,7 @@ object WireguardManager : KoinComponent {
                 ssidItem.type.isExact -> {
                     ssidItem.name.equals(ssid, ignoreCase = true)
                 }
+
                 else -> { // wildcard
                     matchesWildcard(ssidItem.name, ssid)
                 }
@@ -903,7 +934,44 @@ object WireguardManager : KoinComponent {
                 m.isDeletable,
                 m.ssidEnabled,
                 m.ssids,
+                m.allowIncomingPeers,
                 m.isSplitProxy
+            )
+
+        )
+        if (map?.isActive == true) {
+            VpnController.addWireGuardProxy(id = ID_WG_BASE + config.getId())
+            VpnController.notifyConnectionMonitor()
+        }
+    }
+
+    suspend fun updateAllowIncomingPeers(id: Int, allow: Boolean) {
+        val config = configs.find { it.getId() == id }
+        val map = mappings.find { it.id == id }
+        if (config == null) {
+            Logger.e(LOG_TAG_PROXY, "updateAllowIncomingPeers: wg not found, id: $id, ${configs.size}")
+            return
+        }
+        Logger.i(LOG_TAG_PROXY, "updating allow incoming peers for config: $id, ${config.getPeers()}")
+        db.updateAllowIncomingPeers(id, allow)
+        val m = mappings.find { it.id == id } ?: return
+        mappings.remove(m)
+        mappings.add(
+            WgConfigFilesImmutable(
+                id = id,
+                name = config.getName(),
+                configPath = m.configPath,
+                serverResponse = m.serverResponse,
+                isActive = m.isActive,
+                isCatchAll = m.isCatchAll,
+                isLockdown = m.isLockdown,
+                oneWireGuard = m.oneWireGuard,
+                useOnlyOnMetered = m.useOnlyOnMetered,
+                isDeletable = m.isDeletable,
+                ssidEnabled = m.ssidEnabled,
+                ssids = m.ssids,
+                isSplitProxy = m.isSplitProxy,
+                allowIncomingPeers = allow
             )
         )
         if (map?.isActive == true) {
@@ -937,6 +1005,7 @@ object WireguardManager : KoinComponent {
                 m.isDeletable,
                 m.ssidEnabled,
                 m.ssids,
+                m.allowIncomingPeers,
                 m.isSplitProxy
             )
         mappings.add(newMap)
@@ -968,6 +1037,7 @@ object WireguardManager : KoinComponent {
                 m.isDeletable,
                 m.ssidEnabled,
                 m.ssids,
+                m.allowIncomingPeers,
                 m.isSplitProxy
             )
         )
@@ -997,6 +1067,7 @@ object WireguardManager : KoinComponent {
                 m.isDeletable,
                 m.ssidEnabled,
                 m.ssids,
+                m.allowIncomingPeers,
                 m.isSplitProxy
             )
         mappings.add(newMap)
@@ -1033,6 +1104,7 @@ object WireguardManager : KoinComponent {
                 m.isDeletable,
                 m.ssidEnabled,
                 m.ssids,
+                m.allowIncomingPeers,
                 isSplitProxy
             )
         mappings.add(newMap)
@@ -1068,6 +1140,7 @@ object WireguardManager : KoinComponent {
                 m.isDeletable,
                 ssidEnabled, // just updating ssidEnabled
                 m.ssids,
+                m.allowIncomingPeers,
                 m.isSplitProxy
             )
         mappings.add(newMap)
@@ -1105,6 +1178,7 @@ object WireguardManager : KoinComponent {
                 m.isDeletable,
                 m.ssidEnabled,
                 ssids, // just updating ssids
+                m.allowIncomingPeers,
                 m.isSplitProxy
             )
         mappings.add(newMap)
@@ -1244,6 +1318,7 @@ object WireguardManager : KoinComponent {
                     useOnlyOnMetered = false,
                     ssidEnabled = false,
                     ssids = "",
+                    allowIncomingPeers = false,
                     isSplitProxy = false
                 )
             mappings.add(wgf)
@@ -1254,7 +1329,14 @@ object WireguardManager : KoinComponent {
         }
     }
 
-    data class WgStats(val routerStats: RouterStats?, val mtu: Long?, val ip4: Boolean?, val ip6: Boolean?, val addr: String?)
+    data class WgStats(
+        val routerStats: RouterStats?,
+        val mtu: Long?,
+        val ip4: Boolean?,
+        val ip6: Boolean?,
+        val addr: String?
+    )
+
     suspend fun stats(): String {
         val sb = StringBuilder()
         mappings.filter { it.isActive }.forEach {
@@ -1340,7 +1422,10 @@ object WireguardManager : KoinComponent {
             }
 
             if (tempFiles.isEmpty()) {
-                Logger.w(LOG_TAG_PROXY, "performRestore: db has ${dbconfs.size} entries but no temp .conf files found, cannot restore")
+                Logger.w(
+                    LOG_TAG_PROXY,
+                    "performRestore: db has ${dbconfs.size} entries but no temp .conf files found, cannot restore"
+                )
                 return
             }
 
@@ -1360,9 +1445,15 @@ object WireguardManager : KoinComponent {
                 // move the file to the wireguard directory with the name available in the database
                 val file = File(tempDir, "${c.id}.conf")
                 if (file.exists()) {
-                    Logger.i(LOG_TAG_PROXY, "performRestore: file exists: ${file.absolutePath} (${file.length()} bytes), proceed restore for config ${c.id}/${c.name}")
+                    Logger.i(
+                        LOG_TAG_PROXY,
+                        "performRestore: file exists: ${file.absolutePath} (${file.length()} bytes), proceed restore for config ${c.id}/${c.name}"
+                    )
                 } else {
-                    Logger.w(LOG_TAG_PROXY, "performRestore: no matching wg file for db entry ${c.id}/${c.name}, expected: ${file.absolutePath}, deleting config entry")
+                    Logger.w(
+                        LOG_TAG_PROXY,
+                        "performRestore: no matching wg file for db entry ${c.id}/${c.name}, expected: ${file.absolutePath}, deleting config entry"
+                    )
                     db.deleteConfig(c.id)
                     return@forEach
                 }
@@ -1402,7 +1493,10 @@ object WireguardManager : KoinComponent {
                 try {
                     targetFile.writeBytes(bytes)
                     restoredIds.add(c.id)
-                    Logger.i(LOG_TAG_PROXY, "performRestore: restored wg config: ${c.id}, ${c.name} -> ${targetFile.absolutePath}")
+                    Logger.i(
+                        LOG_TAG_PROXY,
+                        "performRestore: restored wg config: ${c.id}, ${c.name} -> ${targetFile.absolutePath}"
+                    )
                 } catch (e: java.io.IOException) {
                     Logger.e(
                         LOG_TAG_PROXY,
@@ -1429,7 +1523,10 @@ object WireguardManager : KoinComponent {
                 return
             }
 
-            Logger.i(LOG_TAG_PROXY, "performRestore: successfully restored ${restoredIds.size} configs, cleaning up temp dir")
+            Logger.i(
+                LOG_TAG_PROXY,
+                "performRestore: successfully restored ${restoredIds.size} configs, cleaning up temp dir"
+            )
             val isResidueDeleted = Utilities.deleteRecursive(tempDir)
             if (isResidueDeleted) {
                 Logger.i(LOG_TAG_PROXY, "deleted residue temp wg files: ${tempDir.absolutePath}")

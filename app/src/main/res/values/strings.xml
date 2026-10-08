@@ -1844,6 +1844,9 @@
 
     <string name="config_invalid_desc" translatable="true">Invalid WireGuard configuration</string>
 
+    <string name="wireguard_p2p_main">Allow P2P</string>
+    <string name="wireguard_p2p_dialog_desc">Allow incoming connections from WG peers</string>
+
     <!-- RPN config detail: shown when the proxy could not be registered/fetched -->
     <string name="rpn_recovery_title" translatable="true">Couldn\'t load server</string>
     <string name="rpn_recovery_desc" translatable="true">We couldn\'t register or fetch this server. Make sure the VPN is connected and try again. If it still fails, remove and re-add the server.</string>
@@ -2189,6 +2192,7 @@
 
     <string name="settings_allow_incoming_wg_packets" translatable="true">WireGuard P2P</string>
     <string name="settings_allow_incoming_wg_packets_desc" translatable="true">When enabled, allows incoming connections initiated by WireGuard peers.</string>
+    <string name="wireguard_p2p_needs_eim">Enable "Endpoint Independent Mapping" in Settings → Network Engine to use WireGuard P2P</string>
 
     <string name="lockdown_download_message" translatable="true">Android\'s built-in <i>Download Manager</i> may fail as VPN is in <i>Lockdown</i> mode. Enable Rethink\'s downloader instead?</string>
     <string name="lockdown_download_enable_inapp" translatable="true">Enable Downloader</string>

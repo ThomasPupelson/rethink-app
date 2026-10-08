@@ -21,7 +21,8 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "WgConfigFiles")
 class WgConfigFiles {
-    @PrimaryKey(autoGenerate = true) var id: Int = 0
+    @PrimaryKey(autoGenerate = true)
+    var id: Int = 0
     var name: String = ""
     var configPath: String = ""
     var serverResponse: String = ""
@@ -30,7 +31,9 @@ class WgConfigFiles {
     var isLockdown: Boolean = false
     var oneWireGuard: Boolean = false
     var useOnlyOnMetered: Boolean = false
+    var allowIncomingPeers: Boolean = false
     var isDeletable: Boolean = true
+
     // new: ssid based activation
     var ssidEnabled: Boolean = false
     var ssids: String = "" // newline separated list
@@ -45,6 +48,7 @@ class WgConfigFiles {
         if (isLockdown != other.isLockdown) return false
         if (oneWireGuard != other.oneWireGuard) return false
         if (useOnlyOnMetered != other.useOnlyOnMetered) return false
+        if (allowIncomingPeers != other.allowIncomingPeers) return false
         if (ssidEnabled != other.ssidEnabled) return false
         if (ssids != other.ssids) return false
         return true
@@ -58,6 +62,7 @@ class WgConfigFiles {
         result += result * 31 + this.isLockdown.hashCode()
         result += result * 31 + this.oneWireGuard.hashCode()
         result += result * 31 + this.useOnlyOnMetered.hashCode()
+        result += result * 31 + this.allowIncomingPeers.hashCode()
         result += result * 31 + this.ssidEnabled.hashCode()
         result += result * 31 + this.ssids.hashCode()
         return result
@@ -76,7 +81,8 @@ class WgConfigFiles {
         useOnlyOnMetered: Boolean,
         isDeletable: Boolean = true,
         ssidEnabled: Boolean = false,
-        ssids: String = ""
+        ssids: String = "",
+        allowIncomingPeers: Boolean = false
     ) {
         this.id = id
         this.name = name
@@ -90,6 +96,7 @@ class WgConfigFiles {
         this.isDeletable = isDeletable
         this.ssidEnabled = ssidEnabled
         this.ssids = ssids
+        this.allowIncomingPeers = allowIncomingPeers
     }
 
     constructor(
@@ -103,7 +110,8 @@ class WgConfigFiles {
         useOnlyOnMetered: Boolean,
         isDeletable: Boolean,
         ssidEnabled: Boolean = false,
-        ssids: String = ""
+        ssids: String = "",
+        allowIncomingPeers: Boolean = false
     ) {
         this.name = name
         this.configPath = configPath
@@ -116,6 +124,7 @@ class WgConfigFiles {
         this.isDeletable = isDeletable
         this.ssidEnabled = ssidEnabled
         this.ssids = ssids
+        this.allowIncomingPeers = allowIncomingPeers
     }
 
     fun toImmutable(): WgConfigFilesImmutable {
@@ -132,6 +141,7 @@ class WgConfigFiles {
             isDeletable,
             ssidEnabled,
             ssids,
+            allowIncomingPeers,
             false
         )
     }
@@ -150,7 +160,8 @@ class WgConfigFiles {
                 data.useOnlyOnMetered,
                 data.isDeletable,
                 data.ssidEnabled,
-                data.ssids
+                data.ssids,
+                data.allowIncomingPeers
             )
         }
     }
@@ -169,5 +180,6 @@ data class WgConfigFilesImmutable(
     val isDeletable: Boolean,
     val ssidEnabled: Boolean,
     val ssids: String,
+    val allowIncomingPeers: Boolean,
     val isSplitProxy: Boolean
 ) : java.io.Serializable

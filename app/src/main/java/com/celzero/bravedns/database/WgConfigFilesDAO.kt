@@ -64,6 +64,9 @@ interface WgConfigFilesDAO {
     @Query("update WgConfigFiles set isLockdown = :isLockdown where id = :id")
     fun updateLockdownConfig(id: Int, isLockdown: Boolean)
 
+    @Query("update WgConfigFiles set allowIncomingPeers = :allow where id = :id")
+    fun updateAllowIncomingPeers(id: Int, allow: Boolean)
+
     @Query("update WgConfigFiles set useOnlyOnMetered = :isMobile where id = :id")
     fun updateMobileConfig(id: Int, isMobile: Boolean)
 

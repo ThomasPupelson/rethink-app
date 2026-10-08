@@ -60,6 +60,11 @@ class WgConfigFilesRepository(private val wgConfigFilesDAO: WgConfigFilesDAO) {
         wgConfigFilesDAO.updateLockdownConfig(id, isLockdown)
     }
 
+
+    suspend fun updateAllowIncomingPeers(id: Int, allow: Boolean) {
+        wgConfigFilesDAO.updateAllowIncomingPeers(id, allow)
+    }
+
     suspend fun updateCatchAllConfig(id: Int, isCatchAll: Boolean) {
         wgConfigFilesDAO.updateCatchAllConfig(id, isCatchAll)
     }

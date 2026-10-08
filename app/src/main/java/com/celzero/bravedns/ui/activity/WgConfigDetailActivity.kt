@@ -182,7 +182,8 @@ class WgConfigDetailActivity : BaseActivity(R.layout.activity_wg_detail) {
 
         if (isAtleastQ()) {
             val controller = WindowInsetsControllerCompat(window, window.decorView)
-            controller.isAppearanceLightNavigationBars = Themes.isActivityLightTheme(isDarkThemeOn(), persistentState.theme)
+            controller.isAppearanceLightNavigationBars =
+                Themes.isActivityLightTheme(isDarkThemeOn(), persistentState.theme)
             window.isNavigationBarContrastEnforced = false
         }
         configId = intent.getIntExtra(WgConfigEditorActivity.INTENT_EXTRA_WG_ID, INVALID_CONF_ID)
@@ -194,6 +195,7 @@ class WgConfigDetailActivity : BaseActivity(R.layout.activity_wg_detail) {
     override fun onResume() {
         super.onResume()
         init()
+        applyP2pToggleAvailability()
         setupClickListeners()
         startStatsPolling(configId)
     }
@@ -229,7 +231,7 @@ class WgConfigDetailActivity : BaseActivity(R.layout.activity_wg_detail) {
             Logger.i(LOG_TAG_PROXY, "VPN not active, config may not be available")
             Utilities.showToastUiCentered(
                 this,
-                        getString(R.string.settings_socks5_vpn_disabled_error),
+                getString(R.string.settings_socks5_vpn_disabled_error),
                 Toast.LENGTH_LONG
             )
             finish()
@@ -315,6 +317,8 @@ class WgConfigDetailActivity : BaseActivity(R.layout.activity_wg_detail) {
             }
             b.lockdownCheck.isChecked = mapping.isLockdown
             b.useMobileCheck.isChecked = mapping.useOnlyOnMetered
+            b.wireguardP2pCheck.isChecked = mapping.allowIncomingPeers
+            applyP2pToggleAvailability()
         }
 
         if (shouldObserveAppsCount()) {
@@ -541,7 +545,7 @@ class WgConfigDetailActivity : BaseActivity(R.layout.activity_wg_detail) {
         sb.append(meta.ip ?: "")
         val ipEnd = sb.length
         sb.setSpan(TypefaceSpan("monospace"), ipStart, ipEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-        sb.setSpan(RelativeSizeSpan(1.07f),   ipStart, ipEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        sb.setSpan(RelativeSizeSpan(1.07f), ipStart, ipEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
 
         // asn
         val asnParts = buildList {
@@ -793,6 +797,22 @@ class WgConfigDetailActivity : BaseActivity(R.layout.activity_wg_detail) {
 
         b.lockdownCheck.setOnClickListener { updateLockdown(b.lockdownCheck.isChecked) }
 
+
+        b.wireguardP2pRl.setOnClickListener {
+            if (!persistentState.endpointIndependence) {
+                Utilities.showToastUiCentered(
+                    this,
+                    getString(R.string.wireguard_p2p_needs_eim),
+                    Toast.LENGTH_LONG
+                )
+                return@setOnClickListener
+            }
+            b.wireguardP2pCheck.isChecked = !b.wireguardP2pCheck.isChecked
+            updateAllowIncomingPeers(b.wireguardP2pCheck.isChecked)
+        }
+
+        b.wireguardP2pCheck.setOnClickListener { updateAllowIncomingPeers(b.wireguardP2pCheck.isChecked) }
+
         b.catchAllRl.setOnClickListener {
             b.catchAllCheck.isChecked = !b.catchAllCheck.isChecked
             updateCatchAll(b.catchAllCheck.isChecked)
@@ -905,6 +925,21 @@ class WgConfigDetailActivity : BaseActivity(R.layout.activity_wg_detail) {
 
     private fun updateLockdown(enabled: Boolean) {
         io { WireguardManager.updateLockdownConfig(configId, enabled) }
+    }
+
+
+    private fun updateAllowIncomingPeers(enabled: Boolean) {
+        io { WireguardManager.updateAllowIncomingPeers(configId, enabled) }
+        logEvent(
+            "WireGuard Allow Incoming Peers",
+            "User ${if (enabled) "enabled" else "disabled"} incoming P2P connections for WireGuard config with id $configId"
+        )
+    }
+
+    private fun applyP2pToggleAvailability() {
+        val eim = persistentState.endpointIndependence
+        b.wireguardP2pCheck.isEnabled = eim
+        b.wireguardP2pCheck.alpha = if (eim) 1.0f else 0.5f
     }
 
     private fun updateCatchAll(enabled: Boolean) {
@@ -1182,7 +1217,8 @@ class WgConfigDetailActivity : BaseActivity(R.layout.activity_wg_detail) {
         if (enabled && hasPermissions && isLocationEnabled) {
             // SSID is enabled and we have all necessary permissions/location
             if (ssidItems.isEmpty()) {
-                val txt = getString(R.string.two_argument_space, getString(R.string.lbl_all), getString(R.string.lbl_ssids))
+                val txt =
+                    getString(R.string.two_argument_space, getString(R.string.lbl_all), getString(R.string.lbl_ssids))
                 val allTxt = getString(R.string.single_argument_parenthesis, txt)
                 valueTv.text = allTxt
                 showSsidDisplay(editGroup, displayGroup)
@@ -1197,7 +1233,10 @@ class WgConfigDetailActivity : BaseActivity(R.layout.activity_wg_detail) {
             hideSsidExtras(editGroup, displayGroup)
         }
 
-        Logger.d(LOG_TAG_UI, "SSID permissions: $hasPermissions, Location enabled: $isLocationEnabled, checked: ${b.ssidCheck.isChecked}")
+        Logger.d(
+            LOG_TAG_UI,
+            "SSID permissions: $hasPermissions, Location enabled: $isLocationEnabled, checked: ${b.ssidCheck.isChecked}"
+        )
         // Show/hide error layouts based on permission and location status
         updateErrorLayouts(hasPermissions, isLocationEnabled, permissionErrorLayout, locationErrorLayout)
 
@@ -1253,7 +1292,11 @@ class WgConfigDetailActivity : BaseActivity(R.layout.activity_wg_detail) {
                     val list = SsidItem.parseStorageList(cur)
                     uiCtx {
                         if (list.isEmpty()) {
-                            val allTxt = getString(R.string.two_argument_space, getString(R.string.lbl_all), getString(R.string.lbl_ssids))
+                            val allTxt = getString(
+                                R.string.two_argument_space,
+                                getString(R.string.lbl_all),
+                                getString(R.string.lbl_ssids)
+                            )
                             valueTv.text = allTxt
                             showSsidDisplay(editGroup, displayGroup)
                         } else {
@@ -1272,7 +1315,12 @@ class WgConfigDetailActivity : BaseActivity(R.layout.activity_wg_detail) {
             }
 
             // Update error layouts after state change with current permission status
-            updateErrorLayouts(SsidPermissionManager.hasRequiredPermissions(this), currentLocationEnabled, permissionErrorLayout, locationErrorLayout)
+            updateErrorLayouts(
+                SsidPermissionManager.hasRequiredPermissions(this),
+                currentLocationEnabled,
+                permissionErrorLayout,
+                locationErrorLayout
+            )
         }
 
         layout.setOnClickListener { sw.performClick() }

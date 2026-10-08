@@ -31,34 +31,34 @@ import com.celzero.bravedns.util.Constants
 
 @Database(
     entities =
-    [
-        AppInfo::class,
-        CustomIp::class,
-        DoHEndpoint::class,
-        DnsCryptEndpoint::class,
-        DnsProxyEndpoint::class,
-        DnsCryptRelayEndpoint::class,
-        ProxyEndpoint::class,
-        CustomDomain::class,
-        RethinkDnsEndpoint::class,
-        RethinkRemoteFileTag::class,
-        RethinkLocalFileTag::class,
-        LocalBlocklistPacksMap::class,
-        RemoteBlocklistPacksMap::class,
-        WgConfigFiles::class,
-        ProxyApplicationMapping::class,
-        TcpProxyEndpoint::class,
-        DoTEndpoint::class,
-        ODoHEndpoint::class,
-        RpnProxy::class,
-        WgHopMap::class,
-        SubscriptionStatus::class,
-        SubscriptionStateHistory::class,
-        CountryConfig::class,
-        SponsorEntity::class,
-        SmartDnsEndpoint::class
-    ],
-    version = 35,
+        [
+            AppInfo::class,
+            CustomIp::class,
+            DoHEndpoint::class,
+            DnsCryptEndpoint::class,
+            DnsProxyEndpoint::class,
+            DnsCryptRelayEndpoint::class,
+            ProxyEndpoint::class,
+            CustomDomain::class,
+            RethinkDnsEndpoint::class,
+            RethinkRemoteFileTag::class,
+            RethinkLocalFileTag::class,
+            LocalBlocklistPacksMap::class,
+            RemoteBlocklistPacksMap::class,
+            WgConfigFiles::class,
+            ProxyApplicationMapping::class,
+            TcpProxyEndpoint::class,
+            DoTEndpoint::class,
+            ODoHEndpoint::class,
+            RpnProxy::class,
+            WgHopMap::class,
+            SubscriptionStatus::class,
+            SubscriptionStateHistory::class,
+            CountryConfig::class,
+            SponsorEntity::class,
+            SmartDnsEndpoint::class
+        ],
+    version = 36,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -66,6 +66,7 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         const val DATABASE_NAME = "bravedns.db"
+
         // Pre-packaged asset at the current schema version (31). Because the asset's
         // user_version matches @Database.version and its room_master_table identity_hash
         // matches the hash Room 2.8.1 computes for v31, Room opens it with NO migration
@@ -74,6 +75,7 @@ abstract class AppDatabase : RoomDatabase() {
         // "Bad database header" failure seen after clearing app storage.
         private const val DATABASE_PATH = "database/rethink_v31.db"
         private const val PRAGMA = "pragma wal_checkpoint(full)"
+
         // cap the WAL file size (32MB). Without this, the -wal file stays at its
         // high-water mark forever: SQLite reuses WAL space after a checkpoint but
         // never shrinks the file, so a single large transaction (e.g. a bulk log
@@ -186,6 +188,7 @@ abstract class AppDatabase : RoomDatabase() {
                 .addMigrations(MIGRATION_32_33)
                 .addMigrations(MIGRATION_33_34)
                 .addMigrations(MIGRATION_34_35)
+                .addMigrations(MIGRATION_35_36)
                 .build()
 
         private val roomCallback: Callback =
@@ -195,6 +198,7 @@ abstract class AppDatabase : RoomDatabase() {
                     createAppInfoNotesLengthTriggers(db)
                     Logger.i(LOG_TAG_APP_DB, "Database created, ${db.version}")
                 }
+
                 override fun onDestructiveMigration(db: SupportSQLiteDatabase) {
                     super.onDestructiveMigration(db)
                     Logger.i(LOG_TAG_APP_DB, "Database destructively migrated, ${db.version}")
@@ -221,6 +225,7 @@ abstract class AppDatabase : RoomDatabase() {
                 Logger.w(LOG_TAG_APP_DB, "err setting journal_size_limit: ${e.message}", e)
             }
         }
+
         private fun createAppInfoNotesLengthTriggers(db: SupportSQLiteDatabase) {
             db.execSQL(
                 "CREATE TRIGGER IF NOT EXISTS trg_appinfo_notes_length_insert " +
@@ -1166,7 +1171,7 @@ abstract class AppDatabase : RoomDatabase() {
                     )
 
                     db.execSQL(
-                    """
+                        """
                             CREATE TABLE IF NOT EXISTS SubscriptionStateHistory (
                             id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                             subscriptionId INTEGER NOT NULL,
@@ -1246,7 +1251,10 @@ abstract class AppDatabase : RoomDatabase() {
                     try {
                         db.execSQL("ALTER TABLE AppInfo ADD COLUMN tempAllowEnabled INTEGER NOT NULL DEFAULT 0")
                         db.execSQL("ALTER TABLE AppInfo ADD COLUMN tempAllowExpiryTime INTEGER NOT NULL DEFAULT 0")
-                        Logger.i(LOG_TAG_APP_DB, "MIGRATION_28_29: added tempAllowEnabled, tempAllowExpiryTime to AppInfo")
+                        Logger.i(
+                            LOG_TAG_APP_DB,
+                            "MIGRATION_28_29: added tempAllowEnabled, tempAllowExpiryTime to AppInfo"
+                        )
                     } catch (e: Exception) {
                         Logger.e(LOG_TAG_APP_DB, "MIGRATION_28_29: temp allow columns already exist, ignore", e)
                     }
@@ -1295,32 +1303,43 @@ abstract class AppDatabase : RoomDatabase() {
                     // the DB in an inconsistent state.
                     try {
                         db.execSQL("ALTER TABLE SubscriptionStatus ADD COLUMN previousProductId TEXT NOT NULL DEFAULT ''")
-                    } catch (_: Exception) {}
+                    } catch (_: Exception) {
+                    }
                     try {
                         db.execSQL("ALTER TABLE SubscriptionStatus ADD COLUMN previousPurchaseToken TEXT NOT NULL DEFAULT ''")
-                    } catch (_: Exception) {}
+                    } catch (_: Exception) {
+                    }
                     try {
                         db.execSQL("ALTER TABLE SubscriptionStatus ADD COLUMN replacedAt INTEGER NOT NULL DEFAULT 0")
-                    } catch (_: Exception) {}
+                    } catch (_: Exception) {
+                    }
                     try {
                         db.execSQL("ALTER TABLE SubscriptionStatus ADD COLUMN windowDays INTEGER NOT NULL DEFAULT 0")
-                    } catch (_: Exception) {}
+                    } catch (_: Exception) {
+                    }
                     try {
                         db.execSQL("ALTER TABLE SubscriptionStatus ADD COLUMN orderId TEXT NOT NULL DEFAULT ''")
-                    } catch (_: Exception) {}
+                    } catch (_: Exception) {
+                    }
                     try {
                         db.execSQL("ALTER TABLE SubscriptionStatus ADD COLUMN deviceId TEXT NOT NULL DEFAULT ''")
-                    } catch (_: Exception) {}
+                    } catch (_: Exception) {
+                    }
                     try {
                         db.execSQL("UPDATE SubscriptionStatus SET deviceId = 'pip/identity.json' WHERE deviceId != '' AND deviceId != 'pip/identity.json'")
-                    } catch (_: Exception) {}
+                    } catch (_: Exception) {
+                    }
 
                     // WgConfigFiles: isLockdown column
                     try {
                         db.execSQL("ALTER TABLE WgConfigFiles ADD COLUMN isLockdown INTEGER NOT NULL DEFAULT 0")
                         Logger.i(LOG_TAG_APP_DB, "MIGRATION_28_29: added isLockdown to WgConfigFiles")
                     } catch (e: Exception) {
-                        Logger.e(LOG_TAG_APP_DB, "MIGRATION_28_29: isLockdown already exists in WgConfigFiles, ignore", e)
+                        Logger.e(
+                            LOG_TAG_APP_DB,
+                            "MIGRATION_28_29: isLockdown already exists in WgConfigFiles, ignore",
+                            e
+                        )
                     }
                 }
             }
@@ -1341,7 +1360,10 @@ abstract class AppDatabase : RoomDatabase() {
                         db.execSQL(
                             "ALTER TABLE CountryConfig ADD COLUMN hopEnabled INTEGER NOT NULL DEFAULT 0"
                         )
-                        Logger.i(LOG_TAG_APP_DB, "MIGRATION_29_30: added selectionCount, isFavourite, hopEnabled to CountryConfig")
+                        Logger.i(
+                            LOG_TAG_APP_DB,
+                            "MIGRATION_29_30: added selectionCount, isFavourite, hopEnabled to CountryConfig"
+                        )
                     } catch (e: Exception) {
                         Logger.e(LOG_TAG_APP_DB, "MIGRATION_29_30: columns already exist, ignore", e)
                     }
@@ -1373,14 +1395,14 @@ abstract class AppDatabase : RoomDatabase() {
             try {
                 db.execSQL(
                     "CREATE TABLE IF NOT EXISTS Sponsor (" +
-                        "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
-                        "purchase_token TEXT NOT NULL, " +
-                        "product_id TEXT NOT NULL, " +
-                        "purchase_time INTEGER NOT NULL, " +
-                        "sponsor_since INTEGER NOT NULL, " +
-                        "consumed INTEGER NOT NULL DEFAULT 1, " +
-                        "contribution_count INTEGER NOT NULL DEFAULT 1, " +
-                        "last_contribution_time INTEGER NOT NULL DEFAULT 0)"
+                            "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                            "purchase_token TEXT NOT NULL, " +
+                            "product_id TEXT NOT NULL, " +
+                            "purchase_time INTEGER NOT NULL, " +
+                            "sponsor_since INTEGER NOT NULL, " +
+                            "consumed INTEGER NOT NULL DEFAULT 1, " +
+                            "contribution_count INTEGER NOT NULL DEFAULT 1, " +
+                            "last_contribution_time INTEGER NOT NULL DEFAULT 0)"
                 )
                 Logger.i(LOG_TAG_APP_DB, "created Sponsor table")
             } catch (e: Exception) {
@@ -1388,6 +1410,7 @@ abstract class AppDatabase : RoomDatabase() {
                 throw e
             }
         }
+
         private val MIGRATION_31_32: Migration =
             object : Migration(31, 32) {
                 override fun migrate(db: SupportSQLiteDatabase) {
@@ -1577,6 +1600,18 @@ abstract class AppDatabase : RoomDatabase() {
                                     "WHERE id = 5 AND dnsCryptName = 'Quad9'"
                         )
                     }
+                }
+            }
+        private val MIGRATION_35_36: Migration =
+            object : Migration(35, 36) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "ALTER TABLE WgConfigFiles ADD COLUMN allowIncomingPeers INTEGER NOT NULL DEFAULT 0"
+                    )
+                    Logger.i(
+                        LOG_TAG_APP_DB,
+                        "MIGRATION_35_36: added WgConfigFiles.allowIncomingPeers"
+                    )
                 }
             }
 

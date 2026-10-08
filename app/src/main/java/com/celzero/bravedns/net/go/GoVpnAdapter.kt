@@ -1316,7 +1316,9 @@ class GoVpnAdapter : KoinComponent {
             val isOneWg = WireguardManager.getOneWireGuardProxyId() == proxyId
             if (!isOneWg) checkAndAddProxyForHopIfNeeded(id)
             val skipListenPort = !isOneWg && persistentState.randomizeListenPort
+            val allowIncoming = WireguardManager.getConfigFilesById(proxyId)?.allowIncomingPeers ?: false
             val wgUserSpaceString = wgConfig?.toWgUserspaceString(skipListenPort)
+                ?.let { "allowincoming=$allowIncoming\n$it" }
             // track the add so that the global proxy handler can re-add if it goes missing
             GlobalProxyHandler.track(id)
             val p = getProxies()?.addProxy(id, wgUserSpaceString)
